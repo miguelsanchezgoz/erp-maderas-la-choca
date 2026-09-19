@@ -1,0 +1,206 @@
+// Prisma Schema para Maderas La Choca ERP/CRM
+// Desacoplado para SQLite (desarrollo local) y PostgreSQL/MySQL (producción)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  role      String   @default("VENTAS") // ADMIN, VENTAS, TALLER, ALMACEN
+  status    String   @default("ACTIVO") // ACTIVO, INACTIVO
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id              String       @id @default(cuid())
+  businessName    String       // Razón Social
+  commercialName  String?      // Nombre Comercial
+  rfc             String?
+  phone           String?
+  whatsapp        String?
+  email           String?
+  contactPerson   String?
+  deliveryAddress String?
+  freightZone     String       @default("LOCAL_VILLAHERMOSA") // LOCAL_VILLAHERMOSA, MUNICIPIO_TABASCO, FORANEO
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  leads           Lead[]
+  quotes          Quote[]
+  workOrders      WorkOrder[]
+}
+
+model Lead {
+  id                String    @id @default(cuid())
+  title             String
+  customerId        String?
+  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contactName       String?
+  phone             String?
+  email             String?
+  estimatedValue    Float     @default(0)
+  stage             String    @default("NUEVO") // NUEVO, CONTACTADO, POR_COTIZAR, COTIZADO, EN_NEGOCIACION, GANADO, PERDIDO
+  priority          String    @default("MEDIA") // BAJA, MEDIA, ALTA, URGENTE
+  notes             String?
+  expectedCloseDate DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model WoodSpecies {
+  id              String          @id @default(cuid())
+  commonName      String          @unique // Pino, Teca, Mango, Maculis, Jahua, Parota, Amargoso, Caracolillo, Macayo, Cachimbo, Coco, Mangle Prieto, Mangle Blanco, Mangle Rojo, Postes y Puntales
+  scientificName  String?
+  category        String          @default("DURA_TROPICAL") // PRECIOSA, DURA_TROPICAL, COMERCIAL_BLANDA, PALMA_ESPECIAL, REGULADA
+  densityKgM3     Int?
+  basePricePerPt  Float           // Precio base por Pie Tabla (MXN)
+  description     String?
+  commonUses      String?
+  isAvailable     Boolean         @default(true)
+  inventoryItems  InventoryItem[]
+  quoteItems      QuoteItem[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Quote {
+  id               String      @id @default(cuid())
+  quoteNumber      String      @unique // COT-2026-0001
+  customerId       String?
+  customer         Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName     String
+  rfc              String?
+  deliveryAddress  String?
+  freightZone      String      @default("LOCAL_VILLAHERMOSA")
+  subtotalWood     Float       @default(0)
+  valueAddedTotal  Float       @default(0) // Cepillado, corte, estufado
+  freightCost      Float       @default(0)
+  discount         Float       @default(0)
+  subtotal         Float       @default(0)
+  iva              Float       @default(0)
+  total            Float       @default(0)
+  status           String      @default("BORRADOR") // BORRADOR, ENVIADA, ACEPTADA, RECHAZADA, VENCIDA
+  notes            String?
+  validityDays     Int         @default(15)
+  deliveryTimeDays Int         @default(5)
+  paymentTerms     String      @default("50% Anticipo, 50% Contra entrega")
+  items            QuoteItem[]
+  workOrders       WorkOrder[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model QuoteItem {
+  id                String       @id @default(cuid())
+  quoteId           String
+  quote             Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  woodSpeciesId     String?
+  woodSpecies       WoodSpecies? @relation(fields: [woodSpeciesId], references: [id], onDelete: SetNull)
+  speciesName       String
+  thicknessInches   Float        // Grosor en pulgadas
+  widthInches       Float        // Ancho en pulgadas
+  lengthValue       Float        // Largo numérico
+  lengthUnit        String       @default("PIES") // PIES, METROS
+  pieces            Int          @default(1)
+  boardFeetTotal    Float        // PT totales
+  cubicMetersTotal  Float        // m3 totales
+  unitPricePerPt    Float        // Precio por PT
+  woodSubtotal      Float
+  cuttingService    Boolean      @default(false)
+  cuttingCost       Float        @default(0)
+  planingService    String       @default("NINGUNO") // NINGUNO, DOS_CARAS, CUATRO_CARAS
+  planingCost       Float        @default(0)
+  dryingService     Boolean      @default(false)
+  dryingCost        Float        @default(0)
+  itemTotal         Float
+  createdAt         DateTime     @default(now())
+}
+
+model WorkOrder {
+  id                    String              @id @default(cuid())
+  orderNumber           String              @unique // OT-2026-0001
+  customerId            String?
+  customer              Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName          String
+  quoteId               String?
+  quote                 Quote?              @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  serviceType           String              // REPARACION_TRANSPORTE, FABRICACION_INDUSTRIAL
+  subcategory           String              // LOW_BOY, CAJA_SECA, PLATAFORMA_PLANA, CARROCERIA_REDILAS, CAJA_TRANSPORTE_PESADO, CAJA_EXPORTACION_NOM144, TARIMA_REFORZADA_PETROLERA, CUNAS_TUBERIA_PIPE_SADDLE, CHOCK_BLOCKS_SEGURIDAD, ESTACAS_TOPOGRAFIA, PIZARRA_SOPORTE_MOTOR
+  status                String              @default("PENDIENTE") // PENDIENTE, EN_PROCESO, CONTROL_CALIDAD, LISTO_ENTREGA, ENTREGADO
+  priority              String              @default("MEDIA") // BAJA, MEDIA, ALTA, URGENTE
+  title                 String
+  description           String?
+  requiresNom144        Boolean             @default(false)
+  nom144BatchCode       String?             // Folio o lote de tratamiento térmico
+  semarnatStampRegistry String?             // Sello oficial MX-04-XXXX-HT
+  estimatedHours        Float               @default(0)
+  actualHours           Float               @default(0)
+  estimatedBoardFeet    Float               @default(0)
+  estimatedCost         Float               @default(0)
+  finalPrice            Float               @default(0)
+  startDate             DateTime?
+  targetDeliveryDate    DateTime?
+  completionDate        DateTime?
+  assignedTo            String?
+  notes                 String?
+  materials             WorkOrderMaterial[]
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+}
+
+model WorkOrderMaterial {
+  id           String    @id @default(cuid())
+  workOrderId  String
+  workOrder    WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  materialName String
+  category     String    @default("MADERA") // MADERA, HERRAJES_TORNILLERIA, QUIMICOS_PINTURA, FLEJES_EMPAQUE
+  quantity     Float
+  unit         String    // PT, PIEZAS, KG, JUEGO
+  unitCost     Float     @default(0)
+  subtotal     Float     @default(0)
+  createdAt    DateTime  @default(now())
+}
+
+model InventoryItem {
+  id             String          @id @default(cuid())
+  sku            String          @unique
+  name           String
+  category       String          // MADERA_BRUTO, MADERA_PROCESADA, INSUMOS_TALLER, SUBPRODUCTOS
+  woodSpeciesId  String?
+  woodSpecies    WoodSpecies?    @relation(fields: [woodSpeciesId], references: [id], onDelete: SetNull)
+  unit           String          @default("PT") // PT, PIEZAS, M3, BULTOS, KG, JUEGO
+  currentStock   Float           @default(0)
+  minimumStock   Float           @default(100)
+  costPrice      Float           @default(0)
+  salePrice      Float           @default(0)
+  locationInYard String?         // Patio 1, Nave B, etc.
+  description    String?
+  movements      StockMovement[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model StockMovement {
+  id              String        @id @default(cuid())
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  type            String        // ENTRADA_COMPRA, ENTRADA_RECEPCION_TROZA, SALIDA_VENTA, SALIDA_TALLER, MERMA_ASERRADERO, AJUSTE_INVENTARIO
+  quantity        Float
+  previousStock   Float
+  newStock        Float
+  referenceNumber String?       // Folio Factura, Folio OT, Folio Cotización
+  notes           String?
+  recordedBy      String?
+  createdAt       DateTime      @default(now())
+}
