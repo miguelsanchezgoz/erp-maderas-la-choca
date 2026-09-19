@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import {
   Sun,
   Moon,
@@ -9,7 +10,7 @@ import {
   Building,
   Check,
   UserCog,
-  Users,
+  LogOut,
 } from "lucide-react";
 import { useRole } from "./RoleContext";
 import { UserRole } from "@/types";
@@ -19,20 +20,20 @@ export function Header() {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   const roleColors: Record<UserRole, string> = {
-    ADMIN: "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800",
-    VENTAS: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
-    TALLER: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800",
-    ALMACEN: "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
+    DUENO: "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800",
+    CXC_CXP: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800",
+    ENCARGADO_PISO: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
+    OPERATIVO: "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
   };
 
   const roleNames: Record<UserRole, string> = {
-    ADMIN: "Dirección General",
-    VENTAS: "Asesor de Ventas & CRM",
-    TALLER: "Producción & Taller",
-    ALMACEN: "Patio & Almacén",
+    DUENO: "Dueño / Dirección",
+    CXC_CXP: "CxC & CxP / Finanzas",
+    ENCARGADO_PISO: "Encargado de Piso & Patio",
+    OPERATIVO: "Operativo de Taller",
   };
 
-  const activeUsers = users.filter((u) => u.status === "ACTIVO");
+  const activeUsers = users.filter((u) => u.isActive ?? true);
 
   return (
     <header className="h-16 bg-white/90 dark:bg-industrial-900/90 backdrop-blur-md border-b border-industrial-200 dark:border-industrial-800 px-6 flex items-center justify-between sticky top-0 z-30 transition-colors duration-200 no-print">
@@ -45,7 +46,7 @@ export function Header() {
         </div>
       </div>
 
-      {/* Acciones de Cabecera: Selector de Usuario/Rol y Modo Oscuro */}
+      {/* Acciones de Cabecera: Selector de Usuario/Rol, Modo Oscuro y Logout */}
       <div className="flex items-center space-x-3">
         {/* Selector Dinámico de Colaborador */}
         <div className="relative">
@@ -62,7 +63,7 @@ export function Header() {
                 {currentUser.name}
               </span>
               <span className={`inline-block text-[9px] px-1.5 py-0.2 rounded border font-semibold ${roleColors[currentUser.role] || ""}`}>
-                {currentUser.role}
+                {roleNames[currentUser.role] || currentUser.role}
               </span>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-industrial-400" />
@@ -119,17 +120,19 @@ export function Header() {
                 })}
               </div>
 
-              {/* Acceso directo a administración de usuarios */}
-              <div className="p-2 border-t border-industrial-100 dark:border-industrial-700 bg-industrial-50 dark:bg-industrial-900/50">
-                <Link
-                  href="/usuarios"
-                  onClick={() => setShowRoleDropdown(false)}
-                  className="w-full flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-xl bg-timber-700 hover:bg-timber-800 text-white text-[11px] font-bold transition-all shadow-xs"
-                >
-                  <UserCog className="w-3.5 h-3.5" />
-                  <span>Gestionar Personal & Roles</span>
-                </Link>
-              </div>
+              {/* Acceso a administración de usuarios (solo para DUEÑO) */}
+              {currentUser.role === "DUENO" && (
+                <div className="p-2 border-t border-industrial-100 dark:border-industrial-700 bg-industrial-50 dark:bg-industrial-900/50">
+                  <Link
+                    href="/usuarios"
+                    onClick={() => setShowRoleDropdown(false)}
+                    className="w-full flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-xl bg-timber-700 hover:bg-timber-800 text-white text-[11px] font-bold transition-all shadow-xs"
+                  >
+                    <UserCog className="w-3.5 h-3.5" />
+                    <span>Gestionar Personal & Roles</span>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -142,6 +145,17 @@ export function Header() {
           className="p-2 rounded-xl border border-industrial-200 dark:border-industrial-700 bg-white dark:bg-industrial-800 text-industrial-600 dark:text-amber-400 hover:bg-industrial-50 dark:hover:bg-industrial-700 transition-colors shadow-xs"
         >
           {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+
+        {/* Botón de Cerrar Sesión en Header */}
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          type="button"
+          title="Cerrar sesión"
+          aria-label="Cerrar sesión"
+          className="p-2 rounded-xl border border-red-200/70 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/60 transition-colors shadow-xs"
+        >
+          <LogOut className="w-4 h-4" />
         </button>
       </div>
     </header>

@@ -1,12 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { QuickLumberModal } from "../calculator/QuickLumberModal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [isCalcOpen, setIsCalcOpen] = useState(false);
+  const pathname = usePathname();
+
+  if (pathname === "/login") {
+    return <div className="min-h-screen">{children}</div>;
+  }
 
   return (
     <div className="flex min-h-screen bg-industrial-50 dark:bg-industrial-950 text-industrial-900 dark:text-industrial-100">

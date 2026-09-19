@@ -1,4 +1,4 @@
-export type UserRole = "ADMIN" | "VENTAS" | "TALLER" | "ALMACEN";
+export type UserRole = "DUENO" | "CXC_CXP" | "ENCARGADO_PISO" | "OPERATIVO";
 export type UserStatus = "ACTIVO" | "INACTIVO";
 
 export interface UserType {
@@ -7,7 +7,8 @@ export interface UserType {
   email: string;
   phone?: string | null;
   role: UserRole;
-  status: UserStatus;
+  isActive: boolean;
+  status?: UserStatus;
   avatar?: string | null;
   createdAt?: string | Date;
   updatedAt?: string | Date;

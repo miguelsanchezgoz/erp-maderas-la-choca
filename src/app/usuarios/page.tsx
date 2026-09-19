@@ -28,27 +28,27 @@ import { useRole } from "@/components/navigation/RoleContext";
 
 const ROLES_LIST: { id: UserRole; name: string; description: string; color: string }[] = [
   {
-    id: "ADMIN",
-    name: "Administrador / Dirección",
-    description: "Acceso total al sistema, reportes ejecutivos, catálogo y personal.",
+    id: "DUENO",
+    name: "Dueño / Dirección General",
+    description: "Acceso total a todas las funciones (finanzas, CRM, cubicaje, taller, inventario, usuarios y configuraciones).",
     color: "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800",
   },
   {
-    id: "VENTAS",
-    name: "Asesor de Ventas & CRM",
-    description: "Gestión de prospectos, clientes, cotizaciones y calculadora de cubicaje.",
-    color: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
-  },
-  {
-    id: "TALLER",
-    name: "Jefe de Taller & OTs",
-    description: "Órdenes de trabajo, transportes pesados, habilitado y sello NOM-144 HT.",
+    id: "CXC_CXP",
+    name: "Cuentas por Cobrar & Pagar",
+    description: "Acceso exclusivo a finanzas, facturación, cuentas por cobrar y por pagar.",
     color: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800",
   },
   {
-    id: "ALMACEN",
-    name: "Encargado de Patio & Almacén",
-    description: "Control de stock en patio de trozas, insumos, subproductos y movimientos.",
+    id: "ENCARGADO_PISO",
+    name: "Encargado de Piso & Patio",
+    description: "Supervisión de patio, inventario de madera y trozas, cubicaje y taller (NOM-144).",
+    color: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
+  },
+  {
+    id: "OPERATIVO",
+    name: "Operativo de Taller / Patio",
+    description: "Acceso simplificado a tareas asignadas en taller o movimientos físicos en patio.",
     color: "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
   },
 ];
@@ -69,7 +69,7 @@ export default function UsuariosPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<UserRole>("VENTAS");
+  const [role, setRole] = useState<UserRole>("OPERATIVO");
   const [status, setStatus] = useState<UserStatus>("ACTIVO");
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -117,7 +117,7 @@ export default function UsuariosPage() {
         setName("");
         setEmail("");
         setPhone("");
-        setRole("VENTAS");
+        setRole("OPERATIVO");
         setStatus("ACTIVO");
         await fetchStaff();
         await refreshUsers();

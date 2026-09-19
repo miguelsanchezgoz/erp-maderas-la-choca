@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   KanbanSquare,
@@ -12,11 +13,16 @@ import {
   Package,
   Calculator,
   ShieldCheck,
-  ChevronRight,
-  Sparkles,
   UserCog,
+  DollarSign,
+  CreditCard,
+  Receipt,
+  Settings,
+  LogOut,
+  Sparkles,
 } from "lucide-react";
 import { useRole } from "./RoleContext";
+import { UserRole } from "@/types";
 
 interface SidebarProps {
   onOpenCalculator?: () => void;
@@ -28,53 +34,92 @@ export function Sidebar({ onOpenCalculator }: SidebarProps) {
 
   const navItems = [
     {
-      label: "Dashboard Ejecutivo",
+      label: "Dashboard General",
       href: "/dashboard",
       icon: LayoutDashboard,
-      roles: ["ADMIN", "VENTAS", "TALLER", "ALMACEN"],
+      roles: ["DUENO", "CXC_CXP", "ENCARGADO_PISO", "OPERATIVO"],
       badge: null,
     },
+    // Finanzas, CxC, CxP y Facturación (DUENO y CXC_CXP)
+    {
+      label: "Finanzas & Reportes",
+      href: "/finanzas",
+      icon: DollarSign,
+      roles: ["DUENO", "CXC_CXP"],
+      badge: "Finanzas",
+    },
+    {
+      label: "Cuentas por Cobrar",
+      href: "/cuentas-cobrar",
+      icon: CreditCard,
+      roles: ["DUENO", "CXC_CXP"],
+      badge: "CxC",
+    },
+    {
+      label: "Cuentas por Pagar",
+      href: "/cuentas-pagar",
+      icon: Receipt,
+      roles: ["DUENO", "CXC_CXP"],
+      badge: "CxP",
+    },
+    {
+      label: "Facturación",
+      href: "/facturacion",
+      icon: FileSpreadsheet,
+      roles: ["DUENO", "CXC_CXP"],
+      badge: "CFDI",
+    },
+    // CRM, Clientes y Cotizaciones (DUENO, CXC_CXP y ENCARGADO_PISO)
     {
       label: "CRM & Prospectos",
       href: "/crm",
       icon: KanbanSquare,
-      roles: ["ADMIN", "VENTAS"],
+      roles: ["DUENO", "CXC_CXP", "ENCARGADO_PISO"],
       badge: "Kanban",
     },
     {
       label: "Directorio de Clientes",
       href: "/clientes",
       icon: Users,
-      roles: ["ADMIN", "VENTAS", "TALLER"],
+      roles: ["DUENO", "CXC_CXP", "ENCARGADO_PISO"],
       badge: null,
     },
     {
       label: "Cotizaciones & Cubicaje",
       href: "/cotizaciones",
       icon: FileSpreadsheet,
-      roles: ["ADMIN", "VENTAS"],
+      roles: ["DUENO", "CXC_CXP", "ENCARGADO_PISO"],
       badge: "PT / m³",
     },
+    // Taller e Inventario/Patio (DUENO, ENCARGADO_PISO y OPERATIVO)
     {
       label: "Taller & NOM-144",
       href: "/taller",
       icon: Hammer,
-      roles: ["ADMIN", "TALLER", "VENTAS"],
+      roles: ["DUENO", "ENCARGADO_PISO", "OPERATIVO"],
       badge: "OTs",
     },
     {
       label: "Inventario & Patio",
       href: "/inventario",
       icon: Package,
-      roles: ["ADMIN", "ALMACEN", "TALLER"],
+      roles: ["DUENO", "ENCARGADO_PISO", "OPERATIVO"],
       badge: "Stock",
     },
+    // Usuarios y Configuración (Exclusivo DUENO)
     {
-      label: "Personal / Usuarios",
+      label: "Personal & Roles",
       href: "/usuarios",
       icon: UserCog,
-      roles: ["ADMIN"],
-      badge: "Equipo",
+      roles: ["DUENO"],
+      badge: "Seguridad",
+    },
+    {
+      label: "Configuración",
+      href: "/configuracion",
+      icon: Settings,
+      roles: ["DUENO"],
+      badge: null,
     },
   ];
 
@@ -99,34 +144,39 @@ export function Sidebar({ onOpenCalculator }: SidebarProps) {
         </div>
       </div>
 
-      {/* Acceso Rápido a Calculadora Maderera */}
-      <div className="px-3 pt-3">
-        <button
-          onClick={onOpenCalculator}
-          type="button"
-          className="w-full group relative flex items-center justify-between px-3 py-2.5 rounded-xl bg-gradient-to-r from-timber-500/10 via-amber-500/10 to-forest-500/10 hover:from-timber-500/20 hover:to-forest-500/20 border border-timber-200 dark:border-industrial-700 text-timber-900 dark:text-amber-200 transition-all shadow-sm"
-        >
-          <div className="flex items-center space-x-2.5">
-            <div className="p-1.5 rounded-lg bg-timber-600 text-white shadow-xs">
-              <Calculator className="w-4 h-4" />
+      {/* Acceso Rápido a Calculadora Maderera (para roles con acceso a cubicaje/taller/cotizaciones) */}
+      {["DUENO", "CXC_CXP", "ENCARGADO_PISO", "OPERATIVO"].includes(currentUser.role) && (
+        <div className="px-3 pt-3">
+          <button
+            onClick={onOpenCalculator}
+            type="button"
+            className="w-full group relative flex items-center justify-between px-3 py-2.5 rounded-xl bg-gradient-to-r from-timber-500/10 via-amber-500/10 to-forest-500/10 hover:from-timber-500/20 hover:to-forest-500/20 border border-timber-200 dark:border-industrial-700 text-timber-900 dark:text-amber-200 transition-all shadow-sm"
+          >
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 rounded-lg bg-timber-600 text-white shadow-xs">
+                <Calculator className="w-4 h-4" />
+              </div>
+              <div className="text-left">
+                <span className="block text-xs font-bold leading-tight">
+                  Calculadora de Madera
+                </span>
+                <span className="block text-[10px] text-industrial-500 dark:text-industrial-400 font-medium">
+                  Pies Tabla (PT) & m³
+                </span>
+              </div>
             </div>
-            <div className="text-left">
-              <span className="block text-xs font-bold leading-tight">
-                Calculadora de Madera
-              </span>
-              <span className="block text-[10px] text-industrial-500 dark:text-industrial-400 font-medium">
-                Pies Tabla (PT) & m³
-              </span>
-            </div>
-          </div>
-          <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-        </button>
-      </div>
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+          </button>
+        </div>
+      )}
 
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        <div className="px-3 pb-2 text-[10px] font-bold text-industrial-400 dark:text-industrial-500 uppercase tracking-wider">
-          Módulos Operativos
+        <div className="px-3 pb-2 text-[10px] font-bold text-industrial-400 dark:text-industrial-500 uppercase tracking-wider flex items-center justify-between">
+          <span>Módulos de Negocio</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-industrial-100 dark:bg-industrial-800 text-industrial-600 dark:text-industrial-300 font-mono">
+            {currentUser.role}
+          </span>
         </div>
 
         {allowedNavItems.map((item) => {
@@ -144,19 +194,19 @@ export function Sidebar({ onOpenCalculator }: SidebarProps) {
                   : "text-industrial-600 dark:text-industrial-300 hover:bg-industrial-100 dark:hover:bg-industrial-800/70 hover:text-industrial-900 dark:hover:text-white"
               }`}
             >
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 truncate">
                 <Icon
-                  className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                  className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
                     isActive
                       ? "text-amber-300"
                       : "text-industrial-400 dark:text-industrial-500 group-hover:text-timber-600 dark:group-hover:text-amber-400"
                   }`}
                 />
-                <span>{item.label}</span>
+                <span className="truncate">{item.label}</span>
               </div>
               {item.badge && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold shrink-0 ml-1 ${
                     isActive
                       ? "bg-white/20 text-white"
                       : "bg-industrial-100 dark:bg-industrial-800 text-industrial-500 dark:text-industrial-400"
@@ -170,8 +220,18 @@ export function Sidebar({ onOpenCalculator }: SidebarProps) {
         })}
       </div>
 
-      {/* Certificación Fitosanitaria & Footer */}
+      {/* Certificación Fitosanitaria & Botón Cerrar Sesión */}
       <div className="p-3 border-t border-industrial-100 dark:border-industrial-800 bg-industrial-50/50 dark:bg-industrial-950/40">
+        {/* Botón Visible de Cerrar Sesión */}
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          type="button"
+          className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold text-red-700 dark:text-red-400 bg-red-50/80 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/60 border border-red-200/80 dark:border-red-900/40 transition-all mb-3 shadow-xs"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Cerrar Sesión</span>
+        </button>
+
         <div className="flex items-center space-x-2 px-2 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 mb-2">
           <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
           <div className="text-[10px] leading-tight text-emerald-900 dark:text-emerald-200">

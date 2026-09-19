@@ -1,41 +1,64 @@
 // Prisma Schema para Maderas La Choca ERP/CRM
-// Desacoplado para SQLite (desarrollo local) y PostgreSQL/MySQL (producción)
+// Configurado para PostgreSQL en producción (Supabase) con connection pooling
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  DUENO
+  CXC_CXP
+  ENCARGADO_PISO
+  OPERATIVO
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String     @id @default(cuid())
   name      String
+  email     String     @unique
+  password  String
+  role      Role       @default(OPERATIVO)
+  isActive  Boolean    @default(true)
   phone     String?
-  role      String   @default("VENTAS") // ADMIN, VENTAS, TALLER, ALMACEN
-  status    String   @default("ACTIVO") // ACTIVO, INACTIVO
   avatar    String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  auditLogs AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userEmail String
+  role      String
+  action    String
+  module    String
+  details   String?
+  ipAddress String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Customer {
-  id              String       @id @default(cuid())
-  businessName    String       // Razón Social
-  commercialName  String?      // Nombre Comercial
+  id              String        @id @default(cuid())
+  businessName    String        // Razón Social
+  commercialName  String?       // Nombre Comercial
   rfc             String?
   phone           String?
   whatsapp        String?
   email           String?
   contactPerson   String?
   deliveryAddress String?
-  freightZone     String       @default("LOCAL_VILLAHERMOSA") // LOCAL_VILLAHERMOSA, MUNICIPIO_TABASCO, FORANEO
+  freightZone     String        @default("LOCAL_VILLAHERMOSA") // LOCAL_VILLAHERMOSA, MUNICIPIO_TABASCO, FORANEO
   notes           String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   leads           Lead[]
   quotes          Quote[]
   workOrders      WorkOrder[]
@@ -59,19 +82,19 @@ model Lead {
 }
 
 model WoodSpecies {
-  id              String          @id @default(cuid())
-  commonName      String          @unique // Pino, Teca, Mango, Maculis, Jahua, Parota, Amargoso, Caracolillo, Macayo, Cachimbo, Coco, Mangle Prieto, Mangle Blanco, Mangle Rojo, Postes y Puntales
-  scientificName  String?
-  category        String          @default("DURA_TROPICAL") // PRECIOSA, DURA_TROPICAL, COMERCIAL_BLANDA, PALMA_ESPECIAL, REGULADA
-  densityKgM3     Int?
-  basePricePerPt  Float           // Precio base por Pie Tabla (MXN)
-  description     String?
-  commonUses      String?
-  isAvailable     Boolean         @default(true)
-  inventoryItems  InventoryItem[]
-  quoteItems      QuoteItem[]
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id             String          @id @default(cuid())
+  commonName     String          @unique // Pino, Teca, Mango, Maculis, Jahua, Parota, Amargoso, Caracolillo, Macayo, Cachimbo, Coco, Mangle Prieto, Mangle Blanco, Mangle Rojo, Postes y Puntales
+  scientificName String?
+  category       String          @default("DURA_TROPICAL") // PRECIOSA, DURA_TROPICAL, COMERCIAL_BLANDA, PALMA_ESPECIAL, REGULADA
+  densityKgM3    Int?
+  basePricePerPt Float           // Precio base por Pie Tabla (MXN)
+  description    String?
+  commonUses     String?
+  isAvailable    Boolean         @default(true)
+  inventoryItems InventoryItem[]
+  quoteItems     QuoteItem[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model Quote {
@@ -102,29 +125,29 @@ model Quote {
 }
 
 model QuoteItem {
-  id                String       @id @default(cuid())
-  quoteId           String
-  quote             Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  woodSpeciesId     String?
-  woodSpecies       WoodSpecies? @relation(fields: [woodSpeciesId], references: [id], onDelete: SetNull)
-  speciesName       String
-  thicknessInches   Float        // Grosor en pulgadas
-  widthInches       Float        // Ancho en pulgadas
-  lengthValue       Float        // Largo numérico
-  lengthUnit        String       @default("PIES") // PIES, METROS
-  pieces            Int          @default(1)
-  boardFeetTotal    Float        // PT totales
-  cubicMetersTotal  Float        // m3 totales
-  unitPricePerPt    Float        // Precio por PT
-  woodSubtotal      Float
-  cuttingService    Boolean      @default(false)
-  cuttingCost       Float        @default(0)
-  planingService    String       @default("NINGUNO") // NINGUNO, DOS_CARAS, CUATRO_CARAS
-  planingCost       Float        @default(0)
-  dryingService     Boolean      @default(false)
-  dryingCost        Float        @default(0)
-  itemTotal         Float
-  createdAt         DateTime     @default(now())
+  id               String       @id @default(cuid())
+  quoteId          String
+  quote            Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  woodSpeciesId    String?
+  woodSpecies      WoodSpecies? @relation(fields: [woodSpeciesId], references: [id], onDelete: SetNull)
+  speciesName      String
+  thicknessInches  Float        // Grosor en pulgadas
+  widthInches      Float        // Ancho en pulgadas
+  lengthValue      Float        // Largo numérico
+  lengthUnit       String       @default("PIES") // PIES, METROS
+  pieces           Int          @default(1)
+  boardFeetTotal   Float        // PT totales
+  cubicMetersTotal Float        // m3 totales
+  unitPricePerPt   Float        // Precio por PT
+  woodSubtotal     Float
+  cuttingService   Boolean      @default(false)
+  cuttingCost      Float        @default(0)
+  planingService   String       @default("NINGUNO") // NINGUNO, DOS_CARAS, CUATRO_CARAS
+  planingCost      Float        @default(0)
+  dryingService    Boolean      @default(false)
+  dryingCost       Float        @default(0)
+  itemTotal        Float
+  createdAt        DateTime     @default(now())
 }
 
 model WorkOrder {

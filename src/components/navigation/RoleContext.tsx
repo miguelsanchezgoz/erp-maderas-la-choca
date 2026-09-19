@@ -1,14 +1,16 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { UserRole, UserType } from "@/types";
 
-const FALLBACK_ADMIN: UserType = {
-  id: "admin-principal",
-  name: "Administrador General",
-  email: "admin@maderaslachoca.com",
+const FALLBACK_USER: UserType = {
+  id: "dueno-principal",
+  name: "Dirección General",
+  email: "dueno@maderaslachoca.com",
   phone: "993 123 4567",
-  role: "ADMIN",
+  role: "DUENO",
+  isActive: true,
   status: "ACTIVO",
 };
 
@@ -27,10 +29,26 @@ interface RoleContextType {
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
+  const { data: session } = useSession();
   const [users, setUsers] = useState<UserType[]>([]);
-  const [currentUser, setCurrentUser] = useState<UserType>(FALLBACK_ADMIN);
+  const [currentUser, setCurrentUser] = useState<UserType>(FALLBACK_USER);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(true);
+
+  // Sincronizar automáticamente con NextAuth cuando haya sesión activa
+  useEffect(() => {
+    if (session?.user) {
+      setCurrentUser((prev) => ({
+        ...prev,
+        id: session.user.id || prev.id,
+        name: session.user.name || prev.name,
+        email: session.user.email || prev.email,
+        role: (session.user.role as UserRole) || "OPERATIVO",
+        isActive: true,
+        status: "ACTIVO",
+      }));
+    }
+  }, [session]);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -39,20 +57,15 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         const data: UserType[] = await res.json();
         setUsers(data);
 
-        // Intentar restaurar usuario por ID guardado en localStorage
-        const savedUserId = localStorage.getItem("mlc_active_user_id");
-        const foundSaved = data.find((u) => u.id === savedUserId && u.status === "ACTIVO");
+        // Si no hay sesión de NextAuth todavía, restaurar por ID previo
+        if (!session?.user) {
+          const savedUserId = localStorage.getItem("mlc_active_user_id");
+          const foundSaved = data.find((u) => u.id === savedUserId && (u.isActive ?? true));
 
-        if (foundSaved) {
-          setCurrentUser(foundSaved);
-        } else {
-          // O restaurar por rol previo
-          const savedRole = localStorage.getItem("mlc_role") as UserRole;
-          const foundByRole = data.find((u) => u.role === savedRole && u.status === "ACTIVO");
-          if (foundByRole) {
-            setCurrentUser(foundByRole);
+          if (foundSaved) {
+            setCurrentUser(foundSaved);
           } else if (data.length > 0) {
-            const firstActive = data.find((u) => u.status === "ACTIVO") || data[0];
+            const firstActive = data.find((u) => u.isActive ?? true) || data[0];
             setCurrentUser(firstActive);
           }
         }
@@ -62,7 +75,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoadingUsers(false);
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     fetchUsers();

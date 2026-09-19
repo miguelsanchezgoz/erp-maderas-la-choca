@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -6,6 +7,7 @@ async function main() {
   console.log("Iniciando semillero de datos para Maderas La Choca ERP/CRM...");
 
   // 1. Limpieza de datos existentes
+  await prisma.auditLog.deleteMany();
   await prisma.stockMovement.deleteMany();
   await prisma.inventoryItem.deleteMany();
   await prisma.workOrderMaterial.deleteMany();
@@ -17,47 +19,56 @@ async function main() {
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany();
 
-  // 2. Usuarios del Sistema (Cuentas Base Oficiales)
+  // Generar hash para la contraseña predeterminada
+  const defaultPassword = "Choca2026!";
+  const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+  // 2. Usuarios del Sistema (Cuentas Base Oficiales con RBAC)
   const users = await Promise.all([
     prisma.user.create({
       data: {
-        name: "Administrador General",
-        email: "admin@maderaslachoca.com",
+        name: "Dirección General / Dueño",
+        email: "dueno@maderaslachoca.com",
+        password: hashedPassword,
         phone: "993 123 4567",
-        role: "ADMIN",
-        status: "ACTIVO",
+        role: "DUENO",
+        isActive: true,
       },
     }),
     prisma.user.create({
       data: {
-        name: "Asesor Comercial & Cubicaje",
-        email: "ventas@maderaslachoca.com",
+        name: "Cuentas por Cobrar & Pagar",
+        email: "cxc_cxp@maderaslachoca.com",
+        password: hashedPassword,
         phone: "993 234 5678",
-        role: "VENTAS",
-        status: "ACTIVO",
+        role: "CXC_CXP",
+        isActive: true,
       },
     }),
     prisma.user.create({
       data: {
-        name: "Jefe de Producción & Taller",
-        email: "taller@maderaslachoca.com",
+        name: "Encargado de Piso & Patio",
+        email: "encargado@maderaslachoca.com",
+        password: hashedPassword,
         phone: "993 345 6789",
-        role: "TALLER",
-        status: "ACTIVO",
+        role: "ENCARGADO_PISO",
+        isActive: true,
       },
     }),
     prisma.user.create({
       data: {
-        name: "Encargado de Patio & Almacén",
-        email: "almacen@maderaslachoca.com",
+        name: "Operativo de Taller & Patio",
+        email: "operativo@maderaslachoca.com",
+        password: hashedPassword,
         phone: "993 456 7890",
-        role: "ALMACEN",
-        status: "ACTIVO",
+        role: "OPERATIVO",
+        isActive: true,
       },
     }),
   ]);
 
-  console.log(`✓ ${users.length} usuarios base creados.`);
+  console.log(`✓ ${users.length} usuarios base con roles RBAC y contraseñas hasheadas creados.`);
+  console.log("  Contraseña para todos los usuarios:", defaultPassword);
 
   // 3. Catálogo de Especies de Madera de Tabasco y Comerciales
   const speciesData = [

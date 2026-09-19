@@ -1,7 +1,6 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   TrendingUp,
   DollarSign,
@@ -18,14 +17,25 @@ import {
   RefreshCw,
   BarChart3,
   Flame,
+  ShieldAlert,
+  X,
 } from "lucide-react";
 import { formatCurrency, formatNumber, formatDate, formatFreightZone } from "@/lib/formatters";
 import { useRole } from "@/components/navigation/RoleContext";
 
 export default function DashboardPage() {
   const { currentUser } = useRole();
+  const searchParams = useSearchParams();
+  const unauthorizedError = searchParams.get("error") === "unauthorized";
+  const [showUnauthorizedAlert, setShowUnauthorizedAlert] = useState(unauthorizedError);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (unauthorizedError) {
+      setShowUnauthorizedAlert(true);
+    }
+  }, [unauthorizedError]);
 
   const fetchDashboard = async () => {
     try {
@@ -46,6 +56,32 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Alerta de Acceso No Autorizado por Rol */}
+      {showUnauthorizedAlert && (
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/40 border border-amber-500/30 text-amber-900 dark:text-amber-200 animate-in slide-in-from-top-2">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                Acceso Restringido por Rol ({currentUser.role})
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                No cuentas con los permisos requeridos para acceder al módulo solicitado. Has sido redirigido a tu panel principal.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowUnauthorizedAlert(false)}
+            type="button"
+            className="p-1.5 rounded-lg hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Banner de Bienvenida y Perfil Activo */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-timber-900 via-timber-800 to-forest-900 text-white p-6 md:p-8 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">

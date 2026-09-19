@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import { RoleProvider } from "@/components/navigation/RoleContext";
 import { AppShell } from "@/components/navigation/AppShell";
 
@@ -20,9 +21,11 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className="antialiased selection:bg-amber-500 selection:text-white">
-        <RoleProvider>
-          <AppShell>{children}</AppShell>
-        </RoleProvider>
+        <AuthProvider>
+          <RoleProvider>
+            <AppShell>{children}</AppShell>
+          </RoleProvider>
+        </AuthProvider>
       </body>
     </html>
   );
